@@ -3,7 +3,7 @@
 import os, sys
 import optparse
 import pickle as pickle
-from add_gpio_fun import *
+from instrument import *
 from tracing import *
 import networkx as nx
 import struct

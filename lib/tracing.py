@@ -1,5 +1,5 @@
 import networkx as nx
-from add_gpio_fun import *
+from instrument import *
 from math import ceil
 
 def hexlist(l):

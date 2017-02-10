@@ -14,12 +14,12 @@ lib/coding: library used in elffile, originally from https://bitbucket.org/krp/c
 
 Main tools
 ----------
-  add_gpio_fun.py: instruments a given ELF file
-  gpio2marker.py: converts a recorded GPIO trace to program addresses
+  instrument.py: instruments a given ELF file
+  replay.py: converts a recorded GPIO trace to program addresses
 
 Intrumentation
 --------------
-Usage: add_gpio_fun.py objfile [list of entry points]
+Usage: instrument.py objfile [list of entry points]
 
 Options:
   -h, --help            show this help message and exit
@@ -33,7 +33,7 @@ Options:
   -l, --handleloops 
 
 Example:
-add_gpio_fun.py examples/tinyos_blink.elf
+instrument.py examples/tinyos_blink.elf
 Ouput (in the same directory as the original file):
 tinyos_blink.elf.bbcycles   basic blocks with annotated cycle count
 tinyos_blink.elf.cycles     cycles and type for each instruction
@@ -46,7 +46,7 @@ tinyos_blink.elf.pickle2    program structure and witness information used when 
 
 Replay
 ------
-Usage: gpio2marker.py gpiotracefile elffile
+Usage: replay.py gpiotracefile elffile
 
 Options:
   -h, --help            show this help message and exit
