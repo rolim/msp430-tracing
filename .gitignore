@@ -1,0 +1,11 @@
+__pycache__
+vis/data.js
+examples/*.bbcycles
+examples/*.cycles
+examples/*.loopbounds
+examples/*.lut
+examples/*.markers
+examples/*.mod.elf
+examples/*.pickle
+examples/*.pickle2
+_last
