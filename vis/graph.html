@@ -1,0 +1,236 @@
+<html>
+<head>
+<style>
+
+.link {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+#call   {
+  fill: green;
+}
+
+.link.tree {
+  stroke: #666;
+}
+
+/*.link.call {
+  stroke: green;
+}*/
+
+.link.conditionaljump {
+  stroke-dasharray: 0,2 1;
+}
+
+.link.indirectjump {
+  stroke-dasharray: 0,1 3;
+}
+
+.node.function_entry {
+  stroke: green;
+  fill: lightgreen;
+}
+
+.node.function_entry.indirect {
+  stroke: red;
+  fill: lightgreen;
+}
+
+.node.function_exit {
+  stroke: orange;
+  fill: yellow;
+}
+
+.node.interrupt_entry {
+  stroke: #3399FF;
+  fill: #99CCFF;
+}
+
+.node.interrupt_exit {
+  stroke: orange;
+  fill: yellow;
+}
+
+
+circle {
+  fill: #ccc;
+  stroke: #333;
+  stroke-width: 1.5px;
+}
+
+text {
+  font: 10px sans-serif;
+  pointer-events: none;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+}
+
+</style>
+
+<script src="d3/d3.js" charset="utf-8"></script>
+<script src="jquery/jquery-2.2.0.min.js" charset="utf-8"></script>
+<script src="data.js" charset="utf-8"></script>
+<!-- <script src="datasg.js" charset="utf-8"></script> -->
+<!-- <script src="datatg.js" charset="utf-8"></script> -->
+<script>
+
+$(document).ready(function(){
+
+// Compute the distinct nodes from the links.
+links.forEach(function(link) {
+  link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
+  link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+  
+  if (nodes[link.source.name].hasOwnProperty('targets') == false) nodes[link.source.name].targets=[];
+    nodes[link.source.name].targets.push(link.target.name)
+});
+
+var all_nodes = nodes;
+var all_links = links;
+
+
+var width = $(window).width() * 3;
+    height = $(window).height() * 4;
+
+var force = d3.layout.force()
+//     .nodes(d3.values(nodes))
+//     .links(links)
+    .size([width, height])
+    .linkDistance(30)
+    .charge(-200)
+    .on("tick", tick);
+//     .start();
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+$(window).scrollTop((height -height/4)/2);
+$(window).scrollLeft((width -width/3)/2);
+
+// Per-type markers, as they don't inherit styles.
+svg.append("defs").selectAll("marker")
+    .data(["jump", "call", "conditionaljump", "indirectjump"])
+  .enter().append("marker")
+    .attr("id", function(d) { return d; })
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+  .append("path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+nodes = {};
+$.each(all_nodes, function() {
+    var x = this;
+    var b = 1;
+    if (this.type == "function_entry" | this.type == "interrupt_entry")
+        nodes[this.name] = this;
+});
+force.nodes(d3.values(nodes))
+
+var path = svg.append("g").selectAll("path"); 
+var r = 6
+var circle = svg.append("g").selectAll("circle");  
+var text = svg.append("g").selectAll("text");  
+force.start()
+
+update()
+
+// Use elliptical arc path segments to doubly-encode directionality.
+function tick() {
+  path.attr("d", linkArc);
+  circle.attr("transform", transform);
+  text.attr("transform", transform);
+//   circle.attr("cx", function(d) { return d.x = Math.max(r, Math.min(width - r, d.x)); }) .attr("cy", function(d) { return d.y = Math.max(r, Math.min(height - r, d.y)); });
+}
+
+function linkArc(d) {
+  var dx = d.target.x - d.source.x,
+      dy = d.target.y - d.source.y,
+      dr = Math.sqrt(dx * dx + dy * dy);
+  return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+}
+
+function transform(d) {
+  return "translate(" + d.x + "," + d.y + ")";
+}
+
+function update() {
+
+   circle = circle.data(force.nodes());
+   text = text.data(force.nodes());
+   path = path.data(force.links())
+   path.exit().remove();
+   circle.exit().remove();
+   text.exit().remove();
+   
+   circle.enter().append("circle")
+    .attr("r", r)
+//     .attr("class", function(d) { return "node " + d.type; })
+    .on("click", click)
+    .call(force.drag);
+   circle.attr("class", function(d) { return "node " + d.type + (d.isIndirectCall ? " indirect" : ""); })
+  
+   text.enter().append("text")
+    .attr("x", 8)
+    .attr("y", ".31em");
+   text.text(function(d) { return d.type == "function_exit" || d.type == "interrupt_exit" ? "exit" : d.name; });
+
+   path.enter().append("path");
+   path.attr("class", function(d) { return "link " + d.type +(d.istree==1?' tree':''); })
+       .attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
+}
+
+// Toggle children on click.
+// collapsible force layout: http://bl.ocks.org/mbostock/1093130
+function click(d) {
+  if (d3.event.defaultPrevented) return; // ignore drag
+  if (nodes[d.name].type == 'function_entry' || nodes[d.name].type == "interrupt_entry") {
+      if (nodes[nodes[d.name].targets[0]]) { // collapse
+        function recursedel(d) {
+            if (typeof nodes[d] !== 'undefined') {
+                delete nodes[d]
+                if (all_nodes[d].targets)
+                    all_nodes[d].targets.forEach(recursedel);
+            }
+        }
+        d.targets.forEach(recursedel);
+      }
+      else { // expand
+        function recurse(d) {
+            if (typeof nodes[d] === 'undefined') {
+                nodes[d] = all_nodes[d];
+                if (nodes[d].targets)
+                    nodes[d].targets.forEach(recurse);
+            }
+        }
+        d.targets.forEach(recurse);
+      }
+      force.nodes(d3.values(nodes)).start();
+      links = []
+      all_links.forEach(function(link) {
+        if (nodes[link.source.name] && nodes[link.target.name]) {
+            links.push(link);
+        }
+      });
+      force
+      .links(links)
+      .start();
+      update();
+  }
+}
+
+
+
+});
+
+</script>
+
+</head>
+<body>
+
+</body>
+</html>
