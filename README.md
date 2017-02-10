@@ -1,6 +1,14 @@
 Instrumentation and replay for MSP430 based microcontrollers
 ============================================================
 
+These tools can be used to instrument an MSP430 program binary to emit
+witness identifiers on a I/O port. This implementation specifically targets
+the Tmote Sky node [1]. Trace can be recorded using FlockLab [2] (or a logic analyzer).
+More information about the instrumentation algorithm is provided in [3].
+
+This implementation serves as a proof of concept. Feel free to use it at your own risk.
+Contributions are always welcome.
+
 Folder structure
 ----------------
 examples: example ELF files
@@ -53,6 +61,8 @@ tinyos_blink.elf.mod.elf    instrumented binary
 tinyos_blink.elf.pickle     program structure and witness information used for consecutive passes when instrumenting (python pickled)
 tinyos_blink.elf.pickle2    program structure and witness information used when replaying (python pickled)
 
+Following I/O pins are used to encode witnesses: P6.0, P6.1, P6.2, P6.6, P6.7
+
 Replay
 ------
 Usage: replay.py gpiotracefile elffile                                                                                                                                                               
@@ -79,3 +89,11 @@ Prerequisites
 -------------
 Python 3.4.3
 networkx 1.11
+
+References
+----------
+[1] Moteiv Corporation, Tmote Sky : Datasheet 
+[2] http://flocklab.ethz.ch/
+[3] Roman Lim and Lothar Thiele: Testbed Assisted Control Flow Tracing for Wireless Embedded Systems, Proceedings of the 14th International Conference on Embedded Wireless Systems and Networks (EWSN 2017), Uppsala, Sweden
+
+
