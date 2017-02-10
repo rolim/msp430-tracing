@@ -13,7 +13,6 @@ CPUFREQUENCY = 800e3    # initial CPU frequency estimate
 IRQCYCLES = 6           # time to enter IRQ handler
 IRQ_CONSECUTIVE_TIME = 100e-9
 CACHE = True
-COUNT_NON_TIME_MARKERS = True
 
 class FrequencyEstimate(object):
     starttime = 0
@@ -212,7 +211,6 @@ class ProgramState(object):
     
     enterIrq = False
     G = {}
-    TG = {}
     
     def __init__(self, nodeid, cfgs, markers, tracewriter, resultsfolder, writetrace, writebinarytrace, enc):
         self.nodeid = nodeid
@@ -527,69 +525,6 @@ class ProgramState(object):
         self.cyclecount.append(0)
         self.markercyclecount.append(0)
         
-class TraceWriter(object):
-
-    def __init__(self, filename):
-        from babeltrace import CTFWriter as btw
-        self.writer = btw.Writer(filename)
-        self.clock = btw.Clock('my_clock')
-        self.clock.description = 'this is my clock'
-        self.writer.add_clock(self.clock)
-        self.stream_class = btw.StreamClass('channel_0')
-        self.stream_class.clock = self.clock
-        
-        # create one 16-bit unsigned integer field
-        self.uint16_field_decl = btw.IntegerFieldDeclaration(16)
-        self.uint16_field_decl.signed = False
-        self.string_type = btw.StringFieldDeclaration()
-        # marker event
-        self.marker_event_class = btw.EventClass('marker')
-        self.marker_event_class.add_field(self.uint16_field_decl, 'id')
-        self.marker_event_class.add_field(self.uint16_field_decl, 'address')        
-        self.stream_class.add_event_class(self.marker_event_class)
-        
-        self.eventclasses = {}
-        
-        self.stream = self.writer.create_stream(self.stream_class)
-        
-    def marker(self, time, id, address):
-        self.clock.time = int(time * 1e9)
-        event = btw.Event(self.marker_event_class)
-        event.payload('id').value = id
-        event.payload('address').value = address
-        self.stream.append_event(event)
-
-    def call(self, time, name, address):
-        self.clock.time = int(time * 1e9)
-        # function call event
-        try:
-            function_event_class = self.eventclasses[address]
-        except KeyError:
-            function_event_class = btw.EventClass(name)
-            function_event_class.add_field(self.uint16_field_decl, 'address')    
-            self.stream_class.add_event_class(function_event_class)  
-            self.eventclasses[address] = function_event_class
-        event = btw.Event(function_event_class)
-        event.payload('address').value = address
-        self.stream.append_event(event)
-
-    def callend(self, time, name, address):
-        self.clock.time = int(time * 1e9)
-        # function end event
-        try:
-            function_event_class = self.eventclasses[address+1]
-        except KeyError:
-            function_event_class = btw.EventClass('ret %s' % name)
-            function_event_class.add_field(self.uint16_field_decl, 'address')    
-            self.stream_class.add_event_class(function_event_class)  
-            self.eventclasses[address+1] = function_event_class
-        event = btw.Event(function_event_class)
-        event.payload('address').value = address
-        self.stream.append_event(event)
-        
-    def flush(self):
-        self.stream.flush()
-        
 class NoTraceWriter(object):
 
     def __init__(self, filename):
@@ -615,16 +550,14 @@ def marker2gpiostring(mm, enc):
         
 ## main ########################################
 def main():
-    progname = sys.argv[0]
-    u = ''
-    u += 'usage: %prog gpiotracefile elffile'
+    u = 'usage: %prog gpiotracefile elffile'
 
     parser = optparse.OptionParser(usage = u)
-    parser.add_option("-s", "--start", action="store", type="float", dest="starttime")
-    parser.add_option("-e", "--end", action="store", type="float", dest="endtime")
-    parser.add_option("-O", "--stdin", action="store_true", dest="usestdin", default=False)
-    parser.add_option("-t", "--tracefile", action="store_true", dest="writetrace", default=False)
-    parser.add_option("-b", "--binarytracefile", action="store_true", dest="writebinarytrace", default=False)
+    parser.add_option("-s", "--start", action="store", type="float", dest="starttime", help="ignore events before this time")
+    parser.add_option("-e", "--end", action="store", type="float", dest="endtime", help="ignore events after this time")
+    parser.add_option("-O", "--stdin", action="store_true", dest="usestdin", default=False, help="read event from stdin instead of file")
+    parser.add_option("-t", "--tracefile", action="store_true", dest="writetrace", default=False, help="write trace to trace.txt (text file)")
+    parser.add_option("-b", "--binarytracefile", action="store_true", dest="writebinarytrace", default=False, help="wite trace tp trace.b (binary file)")
     
     options, args = parser.parse_args()   
     
@@ -642,7 +575,6 @@ def main():
     for key, value in cfgs.items():
         cfgs[key].name = str(cfgs[key].name, 'utf-8')
     
-    #tw = TraceWriter('%s/trace.ctf' % workingdir)
     tw = NoTraceWriter('%s/trace.ctf' % workingdir)
     count = 0
     gpio2bit = {'LED1': 16,'LED2': 8,'LED3': 4,'INT1': 1,'INT2': 2}

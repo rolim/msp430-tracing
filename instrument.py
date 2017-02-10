@@ -11,15 +11,12 @@ sys.path.append("%s/lib/elffile" % os.path.dirname(os.path.realpath(__file__)))
 import elffile
 import optparse
 import itertools
-import glob
-import pprint
 import struct
 import copy
 import fractions
 import pickle as pickle
 import time
 import operator
-import math
 import json
 from tracing import *
 
@@ -634,18 +631,17 @@ def main():
     global TIME_METHOD, USE_UNIQUE_MARKERS, USE_CFG_UNIQUE_MARKERS, CPU_SPEED_ERROR, ALLOW_LOOPS_IN_TIMED, BOUNDFILE
     
     main_start_time = time.time()
-    progname = sys.argv[0]
     u = 'usage: %prog objfile [list of entry points]'
 
     parser = optparse.OptionParser(usage = u)
-    parser.add_option("-m", "--method", action="store", type="string", dest="TIME_METHOD")
-    parser.add_option("-U", "--uniquemarkers", action="store_true", dest="USE_UNIQUE_MARKERS")
-    parser.add_option("-u", "--nouniquemarkers", action="store_false", dest="USE_UNIQUE_MARKERS")
-    parser.add_option("-C", "--cfguniquemarkers", action="store_true", dest="USE_CFG_UNIQUE_MARKERS")
-    parser.add_option("-c", "--nocfguniquemarkers", action="store_false", dest="USE_CFG_UNIQUE_MARKERS")
-    parser.add_option("-t", "--tolerance", action="store", type="float", dest="CPU_SPEED_ERROR")
-    parser.add_option("-b", "--boundtrace", action="store", type="string", dest="BOUNDFILE")
-    parser.add_option("-l", "--handleloops", action="store_true", dest="ALLOW_LOOPS_IN_TIMED", default=False)
+    parser.add_option("-m", "--method", action="store", type="string", dest="TIME_METHOD", help="possible methods are: 'none' Ball and Larus without time (default), 'reduction' with time, 'none_and_reduction' both")
+    parser.add_option("-U", "--uniquemarkers", action="store_true", dest="USE_UNIQUE_MARKERS", help="use globally unique witness identifiers")
+    parser.add_option("-u", "--nouniquemarkers", action="store_false", dest="USE_UNIQUE_MARKERS", help="reuse witness identifiers (default)")
+    parser.add_option("-C", "--cfguniquemarkers", action="store_true", dest="USE_CFG_UNIQUE_MARKERS", help="use per function unique witness identifiers")
+    parser.add_option("-c", "--nocfguniquemarkers", action="store_false", dest="USE_CFG_UNIQUE_MARKERS", help="reuse witness identifiers (default)")
+    parser.add_option("-t", "--tolerance", action="store", type="float", dest="CPU_SPEED_ERROR", help="target CPU speed uncertainty in % (default 1%), used for time method")
+    parser.add_option("-b", "--boundtrace", action="store", type="string", dest="BOUNDFILE", help="file containing upper bounds on basic block executions")
+    parser.add_option("-l", "--handleloops", action="store_true", dest="ALLOW_LOOPS_IN_TIMED", default=False, help="keep loops between witnesses if possible")
     options, args = parser.parse_args()
     
     if len(sys.argv) == 1:
