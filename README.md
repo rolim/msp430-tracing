@@ -95,5 +95,3 @@ References
 [1] Moteiv Corporation, Tmote Sky : Datasheet 
 [2] http://flocklab.ethz.ch/
 [3] Roman Lim and Lothar Thiele: Testbed Assisted Control Flow Tracing for Wireless Embedded Systems, Proceedings of the 14th International Conference on Embedded Wireless Systems and Networks (EWSN 2017), Uppsala, Sweden
-
-
